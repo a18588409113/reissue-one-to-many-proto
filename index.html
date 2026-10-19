@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>补发一对多 · 中保真原型</title>
+  <style>
+    :root {
+      --bg: #f0f2f5; --card: #fff; --text: #333; --muted: #888; --line: #e8e8e8;
+      --primary: #1890ff; --primary-dark: #096dd9; --header: #001529;
+      --ok: #52c41a; --warn: #fa8c16; --danger: #ff4d4f; --row-sel: #fffbe6;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg); color: var(--text); font-size: 13px;
+    }
+    .topbar {
+      height: 48px; background: var(--header); color: #fff; display: flex; align-items: center;
+      padding: 0 16px; gap: 20px; font-size: 13px;
+    }
+    .topbar .brand { font-weight: 600; margin-right: 12px; }
+    .topbar a { color: rgba(255,255,255,.75); text-decoration: none; }
+    .shell { max-width: 1280px; margin: 0 auto; padding: 12px 16px 40px; }
+    .proto-nav {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;
+      background: var(--card); padding: 10px 12px; border-radius: 6px; border: 1px solid var(--line);
+    }
+    .proto-nav button {
+      border: 1px solid var(--line); background: #fff; padding: 6px 12px; border-radius: 4px;
+      cursor: pointer; font-size: 13px;
+    }
+    .proto-nav button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .note {
+      background: #e6f7ff; border: 1px solid #91d5ff; color: #0050b3;
+      padding: 8px 12px; border-radius: 4px; margin-bottom: 12px; font-size: 12px;
+    }
+    .warn-box {
+      background: #fff7e6; border: 1px solid #ffd591; color: #ad6800;
+      padding: 8px 12px; border-radius: 4px; margin-bottom: 12px; font-size: 12px;
+    }
+    .panel { display: none; background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 12px; }
+    .panel.active { display: block; }
+    .crumb { color: var(--muted); margin-bottom: 8px; }
+    .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--line); margin-bottom: 10px; }
+    .tabs span {
+      padding: 8px 14px; cursor: default; border-bottom: 2px solid transparent; color: var(--muted);
+    }
+    .tabs span.on { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 10px; }
+    .btn {
+      border: 1px solid var(--line); background: #fff; padding: 4px 10px; border-radius: 3px;
+      cursor: pointer; font-size: 12px;
+    }
+    .btn.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .btn.green { background: #52c41a; color: #fff; border-color: #52c41a; }
+    .btn.orange { background: #fa8c16; color: #fff; border-color: #fa8c16; }
+    .btn.ghost { color: var(--primary); border-color: var(--primary); }
+    table.grid { width: 100%; border-collapse: collapse; font-size: 12px; }
+    table.grid th, table.grid td {
+      border: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top;
+    }
+    table.grid th { background: #fafafa; white-space: nowrap; }
+    table.grid tr.sel { background: var(--row-sel); }
+    .sub-title { font-weight: 600; margin: 12px 0 6px; }
+    input, select, textarea {
+      border: 1px solid #d9d9d9; border-radius: 3px; padding: 4px 8px; font-size: 12px;
+      font-family: inherit;
+    }
+    input:focus, textarea:focus { outline: 1px solid var(--primary); border-color: var(--primary); }
+    .modal-mask {
+      position: fixed; inset: 0; background: rgba(0,0,0,.45); display: none;
+      align-items: flex-start; justify-content: center; padding: 40px 16px; z-index: 50; overflow: auto;
+    }
+    .modal-mask.show { display: flex; }
+    .modal {
+      background: #fff; width: min(1100px, 100%); border-radius: 4px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.2);
+    }
+    .modal-hd {
+      padding: 12px 16px; border-bottom: 1px solid var(--line);
+      display: flex; justify-content: space-between; align-items: center; font-weight: 600;
+    }
+    .modal-bd { padding: 14px 16px; max-height: 75vh; overflow: auto; }
+    .modal-ft {
+      padding: 10px 16px; border-top: 1px solid var(--line);
+      display: flex; justify-content: flex-end; gap: 8px;
+    }
+    .form-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px 12px; margin-bottom: 12px;
+    }
+    .form-grid label { display: block; color: var(--muted); margin-bottom: 2px; font-size: 12px; }
+    .form-grid .req::before { content: "*"; color: var(--danger); margin-right: 2px; }
+    .section-label { font-weight: 600; margin: 10px 0 6px; }
+    .upload-box {
+      border: 1px dashed #d9d9d9; padding: 16px; text-align: center; color: var(--muted);
+      margin-bottom: 10px; background: #fafafa;
+    }
+    .tip-box {
+      background: #f5f5f5; border: 1px solid var(--line); padding: 10px 12px;
+      white-space: pre-wrap; line-height: 1.7; font-size: 12px; margin: 8px 0;
+      min-height: 90px;
+    }
+    .row-actions { display: flex; gap: 6px; align-items: center; margin: 6px 0; }
+    .tag { display: inline-block; background: #e6f7ff; color: #1890ff; padding: 1px 6px; border-radius: 2px; font-size: 11px; }
+    .muted { color: var(--muted); }
+    .desc-cell { max-width: 220px; color: #555; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <span class="brand">iMC 小艾系统</span>
+    <a>系统</a><a>产品</a><a>采购</a><a>订单</a><a>仓库</a>
+  </div>
+  <div class="shell">
+    <div class="proto-nav">
+      <button type="button" class="active" data-panel="p1">① 补发订单列表</button>
+      <button type="button" data-panel="p2">② 文员 · 设置重发</button>
+      <button type="button" data-panel="p3">③ 订单 · 订单重发</button>
+      <button type="button" data-panel="p4">④ OMS-6814 豁免</button>
+      <button type="button" data-panel="p5">⑤ 补发产品统计列表</button>
+    </div>
+    <div class="note">
+      中保真 V2.0 · 多款补发流程 + 配件名称配置 + 补发产品统计列表（销量/次数/数量）。本地路径见 Wiki 附件。
+    </div>
+
+    <!-- ========== Panel 1 ========== -->
+    <div class="panel active" id="p1">
+      <div class="crumb">订单系统 &gt; 补发订单管理 &gt; 补发订单列表</div>
+      <div class="tabs">
+        <span>全部</span><span>待确认</span><span class="on">订单文员确认</span><span>采购确认</span><span>客服确认</span><span>已完成</span>
+      </div>
+      <div class="toolbar">
+        <button type="button" class="btn primary" id="btnOpenEdit">+ 新建</button>
+        <button type="button" class="btn primary" id="btnOpenEdit2">修改</button>
+        <button type="button" class="btn">确认</button>
+        <button type="button" class="btn orange">采购确认</button>
+        <button type="button" class="btn green">订单管理确认</button>
+        <button type="button" class="btn">导出</button>
+        <button type="button" class="btn ghost" id="btnCfgPart">配件名称配置</button>
+      </div>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th></th><th>OA订单号</th><th>状态</th><th>补发原因</th><th>补发方式</th>
+            <th>补发处理中心</th><th>补发订单号</th><th>配件摘要</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="sel">
+            <td>●</td>
+            <td>A260609019523</td>
+            <td>待订单管理部确认</td>
+            <td>质量问题、少发配件</td>
+            <td>国内仓发货</td>
+            <td>惠州处理中心</td>
+            <td class="muted">（重发后回写）</td>
+            <td><span class="tag">共 2 个配件</span> I870000518 / I870000644</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="sub-title">订单详情（选中主单 · 多款多行）</div>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>原产品编码</th><th>补发产品编码</th><th>配件名称</th><th>补发产品描述</th>
+            <th>产品分类</th><th>产品简称</th><th>补发数量</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>I870000544</td>
+            <td>I870000518</td>
+            <td>大弯铰链</td>
+            <td class="desc-cell">象牙白角落桌把手配件</td>
+            <td>钢木家具</td>
+            <td>大件桌</td>
+            <td>1</td>
+          </tr>
+          <tr>
+            <td>I870000544</td>
+            <td>I870000644</td>
+            <td>其他</td>
+            <td class="desc-cell">滚轮配件（其他说明写在描述）</td>
+            <td>钢木家具</td>
+            <td>大件桌</td>
+            <td>1</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="muted" style="margin-top:8px">分类/简称：填补发产品编码后从产品库带出快照；配件名称可配置；其他→描述必填。</p>
+    </div>
+
+    <!-- ========== Panel 2 ========== -->
+    <div class="panel" id="p2">
+      <div class="crumb">订单系统 &gt; 问题订单管理 &gt; 订单文员处理列表</div>
+      <div class="toolbar">
+        <button type="button" class="btn">添加</button>
+        <button type="button" class="btn primary" id="btnClerkReship">设置重发</button>
+        <button type="button" class="btn">导出</button>
+      </div>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th></th><th>订单编号</th><th>处理类型</th><th>处理状态</th><th>重发产品信息</th><th>处理说明</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="sel">
+            <td>●</td>
+            <td>A260609019523</td>
+            <td>重发</td>
+            <td>待处理</td>
+            <td>I870000518(1),I870000644(1)</td>
+            <td>
+              数量：2(2款产品)；
+              描述：象牙白角落桌把手配件；滚轮配件；
+              处理中心：惠州IB处理中心；补发仓库：惠州IB仓库；补发原因：配件缺失；客户意见：客户意见一致
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="muted">列表「处理说明」已按多款扩展：数量/款数 + 多款产品描述（不再只显示 1 款）。</p>
+    </div>
+
+    <!-- ========== Panel 3 ========== -->
+    <div class="panel" id="p3">
+      <div class="crumb">订单系统 &gt; 深圳订单管理 &gt; 订单列表</div>
+      <div class="toolbar">
+        <button type="button" class="btn primary" id="btnOrderReship">订单重发</button>
+        <button type="button" class="btn">自定义拆分订单</button>
+        <button type="button" class="btn">人工拆分订单</button>
+      </div>
+      <table class="grid">
+        <thead>
+          <tr><th></th><th>订单编号</th><th>平台</th><th>状态</th><th>其他状态</th><th>订单类型</th></tr>
+        </thead>
+        <tbody>
+          <tr class="sel">
+            <td>●</td>
+            <td>A260609019523</td>
+            <td>Amazon</td>
+            <td>已发货</td>
+            <td>—</td>
+            <td>单个（原单）</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="muted">点击「订单重发」查看多款重发提示 + 订单详情多行（与设置重发一致）。</p>
+    </div>
+
+    <!-- ========== Panel 4 ========== -->
+    <div class="panel" id="p4">
+      <div class="sub-title">批量导入重发规则 vs 补发一对多链路</div>
+      <div class="warn-box">
+        <strong>OMS-6814 批量导入重发</strong>现网规则：单个/多个且原单仅 1 条明细时产品编号只允许 1 个；散货时重发产品编码<strong>款数不能大于原单明细条数</strong>。
+      </div>
+      <div class="note">
+        <strong>本需求补发链路豁免：</strong>自动建文员任务 →【设置重发】/【订单重发】单笔落单时，
+        <strong>不得</strong>套用「款数≤原单明细」。<br />
+        批量导入功能本身本期不改。
+      </div>
+      <table class="grid">
+        <thead>
+          <tr><th>场景</th><th>是否套用「款数≤原明细」</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>订单列表 · 批量导入重发</td><td>是（沿用 OMS-6814）</td></tr>
+          <tr><td>补发多款 · 设置重发 / 订单重发单笔</td><td><strong>否（本需求豁免）</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ========== Panel 5 统计 ========== -->
+    <div class="panel" id="p5">
+      <div class="crumb">订单系统 &gt; 补发订单管理 &gt; 补发产品统计列表</div>
+      <div class="tabs">
+        <span class="on">按产品编码</span><span>按产品分类</span><span>按产品简称</span>
+      </div>
+      <div class="toolbar" style="align-items:center">
+        <label>统计月份 <input type="month" value="2026-10" /></label>
+        <input placeholder="产品编码" style="width:120px" />
+        <input placeholder="产品分类" style="width:120px" />
+        <input placeholder="产品简称" style="width:120px" />
+        <button type="button" class="btn primary">查询</button>
+        <button type="button" class="btn">导出</button>
+        <button type="button" class="btn ghost">推送负责人配置</button>
+      </div>
+      <div class="note">
+        销售数量：关联《订单列表》明细，按所选自然月汇总（默认发货月）。补发次数/数量：来自《补发订单列表》子行快照。
+      </div>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>产品编码</th><th>产品分类</th><th>产品简称</th>
+            <th>销售数量</th><th>补发次数</th><th>补发数量</th><th>补发率</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>I870000518</td><td>钢木家具</td><td>大件桌</td>
+            <td>120</td><td>3</td><td>3</td><td>2.5%</td>
+          </tr>
+          <tr>
+            <td>I870000644</td><td>钢木家具</td><td>大件桌</td>
+            <td>120</td><td>2</td><td>2</td><td>1.7%</td>
+          </tr>
+          <tr>
+            <td>I870000701</td><td>宠物用品</td><td>猫爬架</td>
+            <td>45</td><td>2</td><td>4</td><td>8.9%</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="muted" style="margin-top:8px">同编码自然月补发次数≥2 → 每月第一周周三推送开发/运营/品质（可配置）。</p>
+    </div>
+  </div>
+
+  <!-- ===== Modal: 补发 编辑 ===== -->
+  <div class="modal-mask" id="modalEdit">
+    <div class="modal">
+      <div class="modal-hd">
+        <span>编辑</span>
+        <button type="button" class="btn" data-close="modalEdit">×</button>
+      </div>
+      <div class="modal-bd">
+        <div class="upload-box">上传图片（bmp/jpg/png/jpeg，最大 5mb）· 原型占位</div>
+        <div class="section-label">补发原因（多选）</div>
+        <div id="reasonBox" style="display:flex;flex-wrap:wrap;gap:8px 14px;margin-bottom:12px;padding:8px 10px;border:1px solid #e8e8e8;border-radius:4px;background:#fafafa">
+          <label><input type="checkbox" name="reason" value="质量问题" checked /> 质量问题</label>
+          <label><input type="checkbox" name="reason" value="包装问题" /> 包装问题</label>
+          <label><input type="checkbox" name="reason" value="少发配件" checked /> 少发配件</label>
+          <label><input type="checkbox" name="reason" value="描述不符" /> 描述不符</label>
+          <label><input type="checkbox" name="reason" value="仓库发错货" /> 仓库发错货</label>
+          <label><input type="checkbox" name="reason" value="工厂发错货" /> 工厂发错货</label>
+          <label><input type="checkbox" name="reason" value="配件混发" /> 配件混发</label>
+          <label><input type="checkbox" name="reason" value="物流异常" /> 物流异常</label>
+          <label><input type="checkbox" name="reason" value="妥投未收到" /> 妥投未收到</label>
+        </div>
+        <div class="section-label">收货地址</div>
+        <div class="form-grid">
+          <div><label class="req">姓名</label><input value="Stephanie Adomiak" style="width:100%" /></div>
+          <div><label class="req">电话</label><input value="5703358495" style="width:100%" /></div>
+          <div><label>E-mail</label><input value="mrsadomiak@gmail.com" style="width:100%" /></div>
+          <div><label class="req">国家</label><input value="US" style="width:100%" /></div>
+          <div><label class="req">州/区域</label><input value="PA" style="width:100%" /></div>
+          <div><label class="req">城市</label><input value="Old Forge" style="width:100%" /></div>
+          <div><label class="req">邮编</label><input value="18518-1416" style="width:100%" /></div>
+          <div style="grid-column:span 2"><label class="req">地址1</label><input value="66 Connell St" style="width:100%" /></div>
+        </div>
+        <div class="row-actions">
+          <span class="section-label" style="margin:0">补发产品信息</span>
+          <button type="button" class="btn ghost" id="btnAddLine">+ 添加子单</button>
+          <span class="muted">填补发产品编码→带出分类/简称；选「其他」→描述必填</span>
+        </div>
+        <table class="grid" id="editLines">
+          <thead>
+            <tr>
+              <th>原产品编码</th><th>补发产品编码</th><th>配件名称</th><th>补发产品描述</th>
+              <th>产品分类</th><th>产品简称</th><th>数量</th><th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="modal-ft">
+        <button type="button" class="btn" data-close="modalEdit">关闭</button>
+        <button type="button" class="btn primary" data-close="modalEdit">确认</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Modal: 配件名称配置 ===== -->
+  <div class="modal-mask" id="modalCfgPart">
+    <div class="modal" style="width:min(820px,100%)">
+      <div class="modal-hd">
+        <span>配件名称配置</span>
+        <button type="button" class="btn" data-close="modalCfgPart">×</button>
+      </div>
+      <div class="modal-bd">
+        <div class="warn-box">
+          字段：配件名称（必填、启用范围内唯一）、排序号（必填，越小越前）、是否启用。<br />
+          「其他」不可删除；停用后建单下拉不可见，历史单保留原文；有引用时禁止物理删除，仅可停用。
+        </div>
+        <div class="toolbar">
+          <button type="button" class="btn primary">+ 新增</button>
+          <span class="muted">预置 Word 全量枚举，可增删改</span>
+        </div>
+        <table class="grid">
+          <thead>
+            <tr><th>配件名称</th><th>排序号</th><th>是否启用</th><th>操作</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><input value="组合器（螺杆）" style="width:200px" /></td>
+              <td><input value="1" style="width:60px" /></td>
+              <td><select><option>是</option><option>否</option></select></td>
+              <td><button type="button" class="btn">保存行</button></td>
+            </tr>
+            <tr>
+              <td><input value="偏心轮" style="width:200px" /></td>
+              <td><input value="2" style="width:60px" /></td>
+              <td><select><option>是</option><option>否</option></select></td>
+              <td><button type="button" class="btn">保存行</button> <button type="button" class="btn">删除</button></td>
+            </tr>
+            <tr>
+              <td><input value="大弯铰链" style="width:200px" /></td>
+              <td><input value="10" style="width:60px" /></td>
+              <td><select><option>是</option><option>否</option></select></td>
+              <td><button type="button" class="btn">保存行</button> <button type="button" class="btn">删除</button></td>
+            </tr>
+            <tr>
+              <td><input value="钢珠滑轨" style="width:200px" /></td>
+              <td><input value="12" style="width:60px" /></td>
+              <td><select><option>是</option><option>否</option></select></td>
+              <td><button type="button" class="btn">保存行</button> <button type="button" class="btn">删除</button></td>
+            </tr>
+            <tr>
+              <td><input value="全新品" style="width:200px" /></td>
+              <td><input value="90" style="width:60px" /></td>
+              <td><select><option>是</option><option>否</option></select></td>
+              <td><button type="button" class="btn">保存行</button> <button type="button" class="btn">删除</button></td>
+            </tr>
+            <tr>
+              <td><input value="其他" style="width:200px" readonly /></td>
+              <td><input value="99" style="width:60px" /></td>
+              <td><select><option>是</option></select></td>
+              <td><span class="muted">系统预置 · 不可删</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-ft">
+        <button type="button" class="btn" data-close="modalCfgPart">关闭</button>
+        <button type="button" class="btn primary" data-close="modalCfgPart">保存全部</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Modal: 设置重发 / 订单重发 ===== -->
+  <div class="modal-mask" id="modalReship">
+    <div class="modal">
+      <div class="modal-hd">
+        <span id="reshipTitle">设置重发</span>
+        <button type="button" class="btn" data-close="modalReship">×</button>
+      </div>
+      <div class="modal-bd">
+        <div class="form-grid">
+          <div><label class="req">邮寄方式</label><select style="width:100%"><option>GC-Fedex-大货</option></select></div>
+          <div><label class="req">处理中心</label><select style="width:100%"><option>惠州IB处理中心</option></select></div>
+          <div><label class="req">重发原因</label><select style="width:100%"><option>配件缺失</option></select></div>
+          <div><label>收件人</label><input value="Richard Wagner" style="width:100%" /></div>
+          <div><label>收件人邮编</label><input value="98937-9440" style="width:100%" /></div>
+          <div><label>电话</label><input value="+1 207-835-4259" style="width:100%" /></div>
+        </div>
+        <div class="section-label">重发提示（只读 · 多款）</div>
+        <div class="tip-box" id="reshipTip">重发产品信息：I870000518(1),I870000644(1)
+处理说明：数量：2(2款产品)；描述：象牙白角落桌把手配件；滚轮配件；处理中心：惠州IB处理中心；补发仓库：惠州IB仓库；补发原因：配件缺失；客户意见：客户意见一致
+处理中心：惠州IB处理中心
+补发仓库：惠州IB仓库
+补发原因：配件缺失
+客户意见：客户意见一致</div>
+        <div class="section-label">订单详情（A260609019523）· 多款多行 = 补发产品编码</div>
+        <table class="grid">
+          <thead>
+            <tr><th></th><th>产品编号</th><th>数量</th><th>物流属性</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><input type="checkbox" checked /></td>
+              <td><input value="I870000518" style="width:160px" /></td>
+              <td><input value="1" style="width:60px" /></td>
+              <td>超长</td>
+            </tr>
+            <tr>
+              <td><input type="checkbox" checked /></td>
+              <td><input value="I870000644" style="width:160px" /></td>
+              <td><input value="1" style="width:60px" /></td>
+              <td>超长</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="muted">默认带出任务上的<strong>补发产品编码</strong>多行，不是只带原单产品一行。保存 → 1 张重发单、2 行明细。</p>
+      </div>
+      <div class="modal-ft">
+        <button type="button" class="btn" data-close="modalReship">关闭</button>
+        <button type="button" class="btn primary" data-close="modalReship">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const panels = document.querySelectorAll(".panel");
+    document.querySelectorAll(".proto-nav button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".proto-nav button").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        panels.forEach((p) => p.classList.remove("active"));
+        document.getElementById(btn.dataset.panel).classList.add("active");
+      });
+    });
+
+    function openModal(id) {
+      document.getElementById(id).classList.add("show");
+    }
+    function closeModal(id) {
+      document.getElementById(id).classList.remove("show");
+    }
+    document.querySelectorAll("[data-close]").forEach((el) => {
+      el.addEventListener("click", () => closeModal(el.dataset.close));
+    });
+    document.querySelectorAll(".modal-mask").forEach((mask) => {
+      mask.addEventListener("click", (e) => {
+        if (e.target === mask) mask.classList.remove("show");
+      });
+    });
+
+    const tbody = document.querySelector("#editLines tbody");
+    const partOpts = ["组合器（螺杆）","偏心轮","预埋件","木榫","自攻螺丝","机械螺丝","过山丝","大弯铰链","中弯铰链","直弯铰链","钢珠滑轨","托底滑轨","2USB口+2AC（电源口）插座","1USB口+1Type-C口+2AC插座","滴胶七色灯带（RGB类）","带线槽七色灯带（RGB类）","背板扣","L型角铁","无纺布编织带","五金包","板材","全新品","其他"];
+    // 模拟：产品系统>产品库>普通产品
+    const productLib = {
+      "I870000518": { cat: "钢木家具", short: "大件桌" },
+      "I870000644": { cat: "钢木家具", short: "大件桌" }
+    };
+    function selHtml(opts, val) {
+      return opts.map((o) => `<option${o===val?" selected":""}>${o}</option>`).join("");
+    }
+    function bindRow(tr) {
+      const nameSel = tr.querySelector(".part-name");
+      const desc = tr.querySelector(".reissue-desc");
+      const code = tr.querySelector(".reissue-code");
+      const cat = tr.querySelector(".fld-cat");
+      const short = tr.querySelector(".fld-short");
+      const syncOther = () => {
+        const other = nameSel.value === "其他";
+        desc.placeholder = other ? "其他说明（必填）" : "补发产品描述";
+        desc.style.borderColor = other && !desc.value.trim() ? "#ff4d4f" : "";
+      };
+      const syncLib = () => {
+        const hit = productLib[code.value.trim()];
+        cat.value = hit ? hit.cat : "";
+        short.value = hit ? hit.short : "";
+      };
+      nameSel.addEventListener("change", syncOther);
+      desc.addEventListener("input", syncOther);
+      code.addEventListener("change", syncLib);
+      code.addEventListener("blur", syncLib);
+      syncOther();
+      syncLib();
+    }
+    function addLine(data) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><input value="${data.origin || "I870000544"}" style="width:100px" /></td>
+        <td><input class="reissue-code" value="${data.reissue || ""}" placeholder="补发产品编码" style="width:110px" /></td>
+        <td><select class="part-name" style="width:120px">${selHtml(partOpts, data.part || "大弯铰链")}</select></td>
+        <td><input class="reissue-desc" value="${data.reissueDesc || ""}" style="width:140px" /></td>
+        <td><input class="fld-cat" value="${data.cat || ""}" readonly placeholder="自动带出" style="width:90px;background:#f5f5f5" /></td>
+        <td><input class="fld-short" value="${data.short || ""}" readonly placeholder="自动带出" style="width:80px;background:#f5f5f5" /></td>
+        <td><input value="${data.qty || "1"}" style="width:44px" /></td>
+        <td><button type="button" class="btn del">删除</button></td>`;
+      tr.querySelector(".del").addEventListener("click", () => {
+        if (tbody.children.length > 1) tr.remove();
+      });
+      bindRow(tr);
+      tbody.appendChild(tr);
+    }
+    function resetLines() {
+      tbody.innerHTML = "";
+      addLine({ reissue: "I870000518", part: "大弯铰链", reissueDesc: "象牙白角落桌把手配件" });
+      addLine({ reissue: "I870000644", part: "其他", reissueDesc: "滚轮配件（其他说明）" });
+    }
+    document.getElementById("btnAddLine").addEventListener("click", () => addLine({}));
+    document.getElementById("btnOpenEdit").addEventListener("click", () => { resetLines(); openModal("modalEdit"); });
+    document.getElementById("btnOpenEdit2").addEventListener("click", () => { resetLines(); openModal("modalEdit"); });
+    document.getElementById("btnCfgPart").addEventListener("click", () => openModal("modalCfgPart"));
+
+    function openReship(title) {
+      document.getElementById("reshipTitle").textContent = title;
+      openModal("modalReship");
+    }
+    document.getElementById("btnClerkReship").addEventListener("click", () => openReship("设置重发"));
+    document.getElementById("btnOrderReship").addEventListener("click", () => openReship("设置重发（订单列表·订单重发）"));
+  </script>
+</body>
+</html>
