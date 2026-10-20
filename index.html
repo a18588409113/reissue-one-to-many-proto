@@ -150,7 +150,7 @@
       <button type="button" data-panel="p5">⑤ 补发产品统计列表</button>
     </div>
     <div class="note">
-      中保真 V2.5 · 列表风格/主单子单字段对齐现网；统计页去掉推送负责人配置；红标=新增列/按钮，绿标=改逻辑字段。
+      中保真 V2.6 · 配件配置无排序号；统计/处理说明/重发拆分规则见 Wiki；红标=新增，绿标=改逻辑。
     </div>
 
     <!-- ========== Panel 1 补发订单列表 ========== -->
@@ -470,33 +470,30 @@
       </div>
       <div class="modal-bd">
         <div class="warn-box">
-          字段：配件名称（必填、启用范围内唯一）、排序号（必填）、是否启用。「其他」不可删除；有引用仅可停用。
+          字段：配件名称（必填、启用范围内唯一）、是否启用。无排序号；下拉按名称升序，「其他」置底。有引用仅可停用。
         </div>
         <div class="toolbar">
           <button type="button" class="btn primary">+ 新增</button>
         </div>
         <table class="grid" style="min-width:0">
           <thead>
-            <tr><th>配件名称</th><th>排序号</th><th>是否启用</th><th>操作</th></tr>
+            <tr><th>配件名称</th><th>是否启用</th><th>操作</th></tr>
           </thead>
           <tbody>
             <tr>
-              <td><input value="组合器（螺杆）" style="width:200px" /></td>
-              <td><input value="1" style="width:60px" /></td>
+              <td><input value="组合器（螺杆）" style="width:240px" /></td>
               <td><select><option>是</option><option>否</option></select></td>
-              <td><button type="button" class="btn">保存行</button></td>
+              <td><button type="button" class="btn">保存行</button> <button type="button" class="btn">删除</button></td>
             </tr>
             <tr>
-              <td><input value="大弯铰链" style="width:200px" /></td>
-              <td><input value="10" style="width:60px" /></td>
+              <td><input value="大弯铰链" style="width:240px" /></td>
               <td><select><option>是</option></select></td>
               <td><button type="button" class="btn">保存行</button> <button type="button" class="btn">删除</button></td>
             </tr>
             <tr>
-              <td><input value="其他" style="width:200px" readonly /></td>
-              <td><input value="99" style="width:60px" /></td>
+              <td><input value="其他" style="width:240px" readonly /></td>
               <td><select><option>是</option></select></td>
-              <td><span class="muted">系统预置 · 不可删</span></td>
+              <td><span class="muted">系统预置 · 不可删不可改名 · 下拉置底</span></td>
             </tr>
           </tbody>
         </table>
