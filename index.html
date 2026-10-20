@@ -121,7 +121,7 @@
       <button type="button" data-panel="p5">⑤ 补发产品统计列表</button>
     </div>
     <div class="note">
-      中保真 V2.1 · 多款补发流程 + 配件名称配置 + 补发产品统计列表。主列表沿用现网字段；多款明细见下方订单详情子行。
+      中保真 V2.2 · 多款补发流程 + 配件名称配置 + 补发产品统计列表。子单保留现网「原产品描述」；多款明细见下方订单详情。
     </div>
 
     <!-- ========== Panel 1 ========== -->
@@ -162,13 +162,14 @@
       <table class="grid">
         <thead>
           <tr>
-            <th>原产品编码</th><th>补发产品编码</th><th>配件名称</th><th>补发产品描述</th>
+            <th>原产品编码</th><th>原产品描述</th><th>补发产品编码</th><th>配件名称</th><th>补发产品描述</th>
             <th>产品分类</th><th>产品简称</th><th>补发数量</th>
           </tr>
         </thead>
         <tbody>
           <tr>
             <td>I870000544</td>
+            <td class="desc-cell">象牙白角落桌：1套 颜色：复古色 材质：铁+MDF…</td>
             <td>I870000518</td>
             <td>大弯铰链</td>
             <td class="desc-cell">象牙白角落桌把手配件</td>
@@ -178,6 +179,7 @@
           </tr>
           <tr>
             <td>I870000544</td>
+            <td class="desc-cell">象牙白角落桌：1套 颜色：复古色 材质：铁+MDF…</td>
             <td>I870000644</td>
             <td>其他</td>
             <td class="desc-cell">滚轮配件（其他说明写在描述）</td>
@@ -187,7 +189,7 @@
           </tr>
         </tbody>
       </table>
-      <p class="muted" style="margin-top:8px">分类/简称：填补发产品编码后从产品库带出快照；配件名称可配置；其他→描述必填。</p>
+      <p class="muted" style="margin-top:8px">原产品描述：按原产品编码带出（同现网）；分类/简称：按补发产品编码从产品库带出快照；配件名称可配置；其他→描述必填。</p>
     </div>
 
     <!-- ========== Panel 2 ========== -->
@@ -349,13 +351,13 @@
         <div class="row-actions">
           <span class="section-label" style="margin:0">补发产品信息</span>
           <button type="button" class="btn ghost" id="btnAddLine">+ 添加子单</button>
-          <span class="muted">填补发产品编码→带出分类/简称；选「其他」→描述必填</span>
+          <span class="muted">原产品编码→带出原产品描述；补发产品编码→带出分类/简称；选「其他」→描述必填</span>
         </div>
         <table class="grid" id="editLines">
           <thead>
             <tr>
-              <th>原产品编码</th><th>补发产品编码</th><th>配件名称</th><th>补发产品描述</th>
-              <th>产品分类</th><th>产品简称</th><th>数量</th><th></th>
+              <th>原产品编码</th><th>原产品描述</th><th>补发产品编码</th><th>配件名称</th><th>补发产品描述</th>
+              <th>产品分类</th><th>产品简称</th><th>数量</th><th>库存</th><th></th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -515,10 +517,13 @@
 
     const tbody = document.querySelector("#editLines tbody");
     const partOpts = ["组合器（螺杆）","偏心轮","预埋件","木榫","自攻螺丝","机械螺丝","过山丝","大弯铰链","中弯铰链","直弯铰链","钢珠滑轨","托底滑轨","2USB口+2AC（电源口）插座","1USB口+1Type-C口+2AC插座","滴胶七色灯带（RGB类）","带线槽七色灯带（RGB类）","背板扣","L型角铁","无纺布编织带","五金包","板材","全新品","其他"];
-    // 模拟：产品系统>产品库>普通产品
+    // 模拟：产品系统>产品库>普通产品（补发码→分类/简称；原码→原产品描述）
     const productLib = {
       "I870000518": { cat: "钢木家具", short: "大件桌" },
       "I870000644": { cat: "钢木家具", short: "大件桌" }
+    };
+    const originLib = {
+      "I870000544": "象牙白角落桌：1套 颜色：复古色 材质：铁+MDF 带翻转喂食架…"
     };
     function selHtml(opts, val) {
       return opts.map((o) => `<option${o===val?" selected":""}>${o}</option>`).join("");
@@ -527,6 +532,8 @@
       const nameSel = tr.querySelector(".part-name");
       const desc = tr.querySelector(".reissue-desc");
       const code = tr.querySelector(".reissue-code");
+      const origin = tr.querySelector(".origin-code");
+      const originDesc = tr.querySelector(".origin-desc");
       const cat = tr.querySelector(".fld-cat");
       const short = tr.querySelector(".fld-short");
       const syncOther = () => {
@@ -539,23 +546,32 @@
         cat.value = hit ? hit.cat : "";
         short.value = hit ? hit.short : "";
       };
+      const syncOrigin = () => {
+        const hit = originLib[origin.value.trim()];
+        originDesc.value = hit || "";
+      };
       nameSel.addEventListener("change", syncOther);
       desc.addEventListener("input", syncOther);
       code.addEventListener("change", syncLib);
       code.addEventListener("blur", syncLib);
+      origin.addEventListener("change", syncOrigin);
+      origin.addEventListener("blur", syncOrigin);
       syncOther();
       syncLib();
+      syncOrigin();
     }
     function addLine(data) {
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td><input value="${data.origin || "I870000544"}" style="width:100px" /></td>
-        <td><input class="reissue-code" value="${data.reissue || ""}" placeholder="补发产品编码" style="width:110px" /></td>
+        <td><input class="origin-code" value="${data.origin || "I870000544"}" style="width:100px" /></td>
+        <td><input class="origin-desc" value="${data.originDesc || ""}" readonly placeholder="按原产品编码带出" style="width:160px;background:#f5f5f5" /></td>
+        <td><input class="reissue-code" value="${data.reissue || ""}" placeholder="请输入补发产品" style="width:110px" /></td>
         <td><select class="part-name" style="width:120px">${selHtml(partOpts, data.part || "大弯铰链")}</select></td>
         <td><input class="reissue-desc" value="${data.reissueDesc || ""}" style="width:140px" /></td>
         <td><input class="fld-cat" value="${data.cat || ""}" readonly placeholder="自动带出" style="width:90px;background:#f5f5f5" /></td>
         <td><input class="fld-short" value="${data.short || ""}" readonly placeholder="自动带出" style="width:80px;background:#f5f5f5" /></td>
         <td><input value="${data.qty || "1"}" style="width:44px" /></td>
+        <td class="muted">${data.stock != null ? data.stock : "-"}</td>
         <td><button type="button" class="btn del">删除</button></td>`;
       tr.querySelector(".del").addEventListener("click", () => {
         if (tbody.children.length > 1) tr.remove();
