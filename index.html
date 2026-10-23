@@ -129,9 +129,10 @@
       <button type="button" data-panel="p2">② 文员列表赋值（改动5）</button>
       <button type="button" data-panel="p3">③ 设置重发 / 订单重发（改动6～7）</button>
       <button type="button" data-panel="p4">④ 落单后拆分（改动8）</button>
+      <button type="button" data-panel="p5">⑤ 配件配置 / 补发统计（改动9～10）</button>
     </div>
     <div class="note">
-      V3.0 · 对照现网 OA 列表风格。红标=新增字段/按钮，绿标=改逻辑。本期只覆盖改动1～8（不含统计列表）。
+      V3.2 · 对照现网 OA 列表风格。红标=新增，绿标=改逻辑。覆盖改动1～10（含配件名称配置、补发产品统计列表）。
     </div>
 
     <!-- p1 -->
@@ -158,7 +159,7 @@
         <button type="button" class="btn">客服确认</button>
         <button type="button" class="btn red">取消</button>
         <button type="button" class="btn orange">导出</button>
-        <button type="button" class="btn ghost" id="btnCfgPart">配件名称配置<span class="new-tag">配套</span></button>
+        <button type="button" class="btn ghost" id="btnCfgPart">配件名称配置<span class="new-tag">⑨</span></button>
       </div>
 
       <div class="table-wrap">
@@ -326,6 +327,50 @@
         《补发订单列表》上的「补发订单号」仍指向落单时的那张主单号，不因拆分改成多个号。
       </div>
     </div>
+
+    <!-- p5 -->
+    <div class="panel" id="p5">
+      <div class="crumb">改动⑨ 配件名称配置 · 改动⑩ 补发产品统计列表</div>
+      <div class="sub-hd">⑨ 配件名称配置<span class="new-tag">新增</span></div>
+      <div class="toolbar">
+        <button type="button" class="btn ghost" id="btnCfgPart2">打开【配件名称配置】</button>
+      </div>
+      <div class="callout" style="margin-top:0">
+        列表工具栏入口；只维护「配件名称 + 是否启用」，无排序号；「其他」不可删；下拉按名称排序，「其他」置底。
+      </div>
+
+      <div class="sub-hd" style="margin-top:16px">⑩ 补发产品统计列表<span class="new-tag">新增页</span></div>
+      <div class="crumb">订单系统 &gt; 补发订单管理 &gt; 补发产品统计列表</div>
+      <div class="status-tabs">
+        <span class="on">按产品编码</span><span>按产品分类</span><span>按产品简称</span>
+      </div>
+      <div class="toolbar" style="align-items:center">
+        <label>统计月份 <input type="month" value="2026-10" /></label>
+        <input placeholder="产品编码" style="width:110px" />
+        <input placeholder="产品分类" style="width:110px" />
+        <input placeholder="产品简称" style="width:110px" />
+        <button type="button" class="btn primary">查询</button>
+        <button type="button" class="btn">导出</button>
+      </div>
+      <div class="table-wrap">
+        <table class="grid" style="min-width:0">
+          <thead>
+            <tr>
+              <th>产品编码</th><th>产品分类</th><th>产品简称</th>
+              <th>销售数量</th><th>补发次数</th><th>补发数量</th><th>补发率</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>I870000518</td><td>钢木家具</td><td>大件桌</td><td>120</td><td>3</td><td>3</td><td>2.5%</td></tr>
+            <tr><td>I870000644</td><td>钢木家具</td><td>大件桌</td><td>120</td><td>2</td><td>2</td><td>1.7%</td></tr>
+            <tr><td>I870000701</td><td>宠物用品</td><td>猫爬架</td><td>45</td><td>2</td><td>4</td><td>8.9%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        <span class="point-tag">⑩</span>按自然月 + 维度（编码/分类/简称）统计：销售数量（订单明细·发货时间）、补发次数（子行条数）、补发数量（子行数量求和）。不做推送。
+      </div>
+    </div>
   </div>
 
   <!-- Modal edit -->
@@ -390,7 +435,7 @@
   <div class="modal-mask" id="modalCfgPart">
     <div class="modal" style="width:min(720px,100%)">
       <div class="modal-hd">
-        <span>配件名称配置（配套改动③）</span>
+        <span>配件名称配置<span class="new-tag">⑨</span></span>
         <button type="button" class="btn" data-close="modalCfgPart">×</button>
       </div>
       <div class="modal-bd">
@@ -518,6 +563,7 @@
     document.getElementById("btnOpenEdit").addEventListener("click", () => { resetLines(); openModal("modalEdit"); });
     document.getElementById("btnOpenEdit2").addEventListener("click", () => { resetLines(); openModal("modalEdit"); });
     document.getElementById("btnCfgPart").addEventListener("click", () => openModal("modalCfgPart"));
+    document.getElementById("btnCfgPart2").addEventListener("click", () => openModal("modalCfgPart"));
     document.getElementById("btnClerkReship").addEventListener("click", () => {
       document.getElementById("reshipTitle").innerHTML = '设置重发<span class="chg-tag">改⑥⑦</span>';
       openModal("modalReship");
